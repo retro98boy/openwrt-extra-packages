@@ -1,0 +1,9 @@
+| 包名                   | 来源                                              | 版本           |
+| --------------------- | ------------------------------------------------ | -------------- |
+| ddns-go               | https://github.com/sirpdboy/luci-app-ddns-go     | 6cd886e        |
+| luci-app-ddns-go      | https://github.com/sirpdboy/luci-app-ddns-go     | 6cd886e        |
+| easytier              | https://github.com/EasyTier/luci-app-easytier    | 6fa92cb        |
+| luci-app-easytier     | https://github.com/EasyTier/luci-app-easytier    | 6fa92cb        |
+| luci-app-socat        | https://github.com/sbwml/openwrt_pkgs            | 68e195c        |
+| msd_lite              | https://github.com/immortalwrt/packages          | 5248177209     |
+| luci-app-msd_lite     | https://github.com/immortalwrt/luci              | 768f24ed3b     |
