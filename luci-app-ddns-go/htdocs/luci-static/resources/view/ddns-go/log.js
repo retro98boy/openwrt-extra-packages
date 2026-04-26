@@ -1,4 +1,7 @@
-/*   Copyright (C) 2021-2025 sirpdboy herboy2008@gmail.com https://github.com/sirpdboy/luci-app-ddns-go */
+// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2022-2026 sirpdboy <herboy2008@gmail.com>
+ */
 'use strict';
 'require dom';
 'require fs';
@@ -10,108 +13,246 @@
 return view.extend({
 	render: function () {
 		var css = `
-			/* 日志框文本区域 */
-			#log_textarea pre {
-				padding: 10px; /* 内边距 */
-				border-bottom: 1px solid #ddd; /* 边框颜色 */
-				font-size: small;
-				line-height: 1.3; /* 行高 */
-				white-space: pre-wrap;
-				word-wrap: break-word;
+			.log-container {
+				max-height: 1200px;
 				overflow-y: auto;
+				border-radius: 3px;
+				margin-top: 10px;
+				padding: 5px;
+				background-color: var(--background-color);
+				font-family: monospace;
+				font-size: 12px;
+				border: 1px solid var(--border-color);
 			}
-			/* 5s 自动刷新文字 */
-			.cbi-section small {
-				margin-left: 1rem;
-				font-size: small; 
-				color: #666; /* 深灰色文字 */
+			.log-line {
+				padding: 3px 5px;
+				font-family: monospace;
+				font-size: 12px;
+				line-height: 1.4;
+				border-bottom: 1px solid var(--border-color-light);
+				white-space: pre-wrap;
+				word-break: break-all;
 			}
+			.log-line:last-child {
+				border-bottom: none;
+			}
+			.log-timestamp {
+				color: #0066cc;
+				margin-right: 10px;
+				font-weight: bold;
+			}
+			.log-error {
+				color: #cc0000;
+			}
+			.log-warning {
+				color: #ff9900;
+			}
+			.control-buttons {
+				margin-bottom: 10px;
+				display: flex;
+				gap: 5px;
+			}
+
 		`;
 
-		var log_textarea = E('div', { 'id': 'log_textarea' },
-			E('img', {
-				'src': L.resource(['icons/loading.gif']),
-				'alt': _('Loading...'),
-				'style': 'vertical-align:middle'
-			}, _('Collecting data ...'))
-		);
+		var log_container = E('div', { 
+			'class': 'log-container', 
+			'id': 'log_container',
+			'style': 'min-height: 200px;'
+		}, E('div', { 'class': 'log-line' }, _('Loading logs...')));
 
-		var log_path = '/var/log/ddns-go.log';
+
 		var lastLogContent = '';
+		var lastScrollTop = 0;
+		var isScrolledToTop = true;
 
-		var clear_log_button = E('div', {}, [
-			E('button', {
-				'class': 'cbi-button cbi-button-remove',
-				'click': function (ev) {
-					ev.preventDefault();
-					var button = ev.target;
-					button.disabled = true;
-					button.textContent = _('Clear Logs...');
-					fs.exec_direct('/usr/libexec/ddns-go-call', ['clear_log'])
-						.then(function () {
-							button.textContent = _('Logs cleared successfully!');
-							button.disabled = false;
-							button.textContent = _('Clear Logs');
-							// 立即刷新日志显示框
-							var log = E('pre', { 'wrap': 'pre' }, [_('Log is clean.')]);
-							dom.content(log_textarea, log);
-							lastLogContent = '';
-						})
-						.catch(function () {
-							button.textContent = _('Failed to clear log.');
-							button.disabled = false;
-							button.textContent = _('Clear Logs');
-						});
+		function extractDDNSGoMessage(line) {
+			if (!line || !line.includes('ddns-go')) return null;
+			
+			var regex = /^(.*?ddns-go.*?):\s*(.*)$/;
+			var match = line.match(regex);
+			
+			if (match) {
+				var timestampMatch = line.match(/^([A-Z][a-z]{2}\s+[A-Z][a-z]{2}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\s+\d{4})/);
+				if (timestampMatch) {
+					return {
+						timestamp: timestampMatch[1],
+						message: match[2]
+					};
 				}
-			}, _('Clear Logs'))
-		]);
+			}
+			
+			var selfTimestampMatch = line.match(/(\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2})\s+(.*)$/);
+			if (selfTimestampMatch) {
+				return {
+					timestamp: selfTimestampMatch[1],
+					message: selfTimestampMatch[2]
+				};
+			}
+			
+			return {
+				timestamp: null,
+				message: line
+			};
+		}
 
-		poll.add(L.bind(function () {
-			return fs.read_direct(log_path, 'text')
-				.then(function (res) {
-					var newContent = res.trim() || _('Log is clean.');
+		function formatLogLine(line) {
+			if (!line || line.trim() === '') return null;
+			
+			var extracted = extractDDNSGoMessage(line);
+			if (!extracted) return null;
+			
+			var lineClass = ['log-line'];
+			
+			if (line.includes('err') || line.includes('ERROR') || line.includes('failed')) {
+				lineClass.push('log-error');
+			} else if (line.includes('warn') || line.includes('WARNING')) {
+				lineClass.push('log-warning');
+			}
+			
+			if (extracted.timestamp) {
+				return E('div', { 'class': lineClass.join(' ') }, [
+					E('span', { 'class': 'log-timestamp' }, extracted.timestamp + ' '),
+					E('span', { 'class': 'log-message' }, extracted.message)
+				]);
+			} else {
+				return E('div', { 'class': lineClass.join(' ') }, extracted.message);
+			}
+		}
+		function formatLogContent(logContent) {
+			if (!logContent || logContent.trim() === '') {
+				return E('div', { 'class': 'log-line' }, _('No ddns-go logs found.'));
+			}
+			
+			var lines = logContent.split('\n');
+			var formattedLines = [];
+			
+			for (var i = 0; i < lines.length; i++) {
+				var line = lines[i].trim();
+				if (line === '' || line.includes('No ddns-go logs found')) continue;
+				
+				var formattedLine = formatLogLine(line);
+				if (formattedLine) {
+					formattedLines.push(formattedLine);
+				}
+			}
+			
+			if (formattedLines.length === 0) {
+				return E('div', { 'class': 'log-line' }, _('No ddns-go logs found.'));
+			}
+			
+			formattedLines.reverse();
+			
+			return E('div', {}, formattedLines);
+		}
 
-					if (newContent !== lastLogContent) {
-						var log = E('pre', { 'wrap': 'pre' }, [newContent]);
-						dom.content(log_textarea, log);
-						log.scrollTop = log.scrollHeight;
-						lastLogContent = newContent;
-					}
-				}).catch(function (err) {
-					var log;
-					if (err.toString().includes('NotFoundError')) {
-						log = E('pre', { 'wrap': 'pre' }, [_('Log file does not exist.')]);
-					} else {
-						log = E('pre', { 'wrap': 'pre' }, [_('Unknown error: %s').format(err)]);
-					}
-					dom.content(log_textarea, log);
+		function clearLogs(button) {
+			button.disabled = true;
+			button.textContent = _('Clearing...');
+			
+			return fs.exec('/usr/libexec/ddns-go-call', ['clear_logs'])
+				.then(function(res) {
+					button.textContent = _('Logs cleared!');
+					lastLogContent = '';
+					return fetchLogs();
+				})
+				.catch(function(err) {
+					console.error('Clear logs error:', err);
+					button.textContent = _('Failed to clear');
+				})
+				.finally(function() {
+					setTimeout(function() {
+						button.disabled = false;
+						button.textContent = _('Clear Logs');
+					}, 2000);
 				});
+		}
+		function fetchLogs() {
+			
+			return fs.exec('/usr/libexec/ddns-go-call', ['get_logs'])
+				.then(function(res) {
+					var logContent = '';
+					if (res === null || res === undefined) {
+						logContent = '';
+					} else if (typeof res === 'string') {
+						logContent = res;
+					} else if (res.stdout !== undefined) {
+						logContent = res.stdout;
+					} else if (res.data !== undefined) {
+						logContent = res.data;
+					} else if (typeof res === 'object') {
+						logContent = JSON.stringify(res);
+					}
+					
+					logContent = logContent.trim();
+					var lineCount = logContent.split('\n').filter(l => 
+						l.trim() !== '' && !l.includes('No ddns-go logs found')
+					).length;
+					
+					if (logContent !== lastLogContent) {
+						
+						var formattedLog = formatLogContent(logContent);
+						
+						var prevScrollHeight = log_container.scrollHeight;
+						var prevScrollTop = log_container.scrollTop;
+						
+						dom.content(log_container, formattedLog);
+						lastLogContent = logContent;
+						
+						if (!isScrolledToTop) {
+							var newScrollHeight = log_container.scrollHeight;
+							var heightDiff = newScrollHeight - prevScrollHeight;
+							log_container.scrollTop = prevScrollTop + heightDiff;
+						}
+					}
+					
+					return Promise.resolve();
+				})
+				.catch(function(err) {
+					console.error('Log fetch error:', err);
+					var errorMsg = _('Failed to read logs: %s').format(err.message || 'Resource not found');
+					dom.content(log_container, E('div', { 'class': 'log-line log-error' }, errorMsg));
+					return Promise.reject(err);
+				});
+		}
+
+		var clear_button = E('button', {
+			'class': 'cbi-button cbi-button-remove',
+			'click': function(ev) {
+				ev.preventDefault();
+				clearLogs(ev.target);
+			}
+		}, _('Clear Logs'));
+
+
+		log_container.addEventListener('scroll', function() {
+			lastScrollTop = this.scrollTop;
+			isScrolledToTop = this.scrollTop <= 1;
+		});
+
+		setTimeout(fetchLogs, 200);
+
+		poll.add(L.bind(function() {
+			return fetchLogs().catch(function(err) {
+				console.error('Poll error:', err);
+			});
 		}));
+
+		poll.start();
 
 		return E('div', { 'class': 'cbi-map' }, [
 			E('style', [css]),
 			E('div', { 'class': 'cbi-section' }, [
-				clear_log_button,
-				log_textarea,
-				E('small', {}, _('Refresh every 5 seconds.').format(L.env.pollinterval)),
-				E('div', { 'class': 'cbi-section-actions cbi-section-actions-right' })
-			]),
-		E('div', { 'style': 'text-align: right;  font-style: italic;' }, [
-                E('span', {}, [
-                    _('© github '),
-                    E('a', { 
-                        'href': 'https://github.com/sirpdboy', 
-                        'target': '_blank',
-                        'style': 'text-decoration: none;'
-                    }, 'by sirpdboy')
-                ])
-            ])
-
-
+				E('div', { 'class': 'control-buttons' }, [ clear_button]),
+				log_container,
+				E('small', {}, [
+					_('Refresh every 5 seconds.').format(L.env.pollinterval),
+				])
+			])
 		]);
-	}
+	},
 
-	//handleSaveApply: null,
-	//handleSave: null,
-	//handleReset: null
+	handleSaveApply: null,
+	handleSave: null,
+	handleReset: null
 });
