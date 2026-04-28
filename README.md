@@ -2,8 +2,8 @@
 | --------------------- | ------------------------------------------------ | -------------- |
 | ddns-go               | https://github.com/sirpdboy/luci-app-ddns-go     | 5e8671f        |
 | luci-app-ddns-go      | https://github.com/sirpdboy/luci-app-ddns-go     | 5e8671f        |
-| easytier              | https://github.com/EasyTier/luci-app-easytier    | e6bf09a        |
-| luci-app-easytier     | https://github.com/EasyTier/luci-app-easytier    | e6bf09a        |
+| easytier              | https://github.com/EasyTier/luci-app-easytier    | ca9e2d6        |
+| luci-app-easytier     | https://github.com/EasyTier/luci-app-easytier    | ca9e2d6        |
 | luci-app-socat        | https://github.com/sbwml/openwrt_pkgs            | 0bfbd44        |
 | msd_lite              | https://github.com/immortalwrt/packages          | 86af762        |
 | luci-app-msd_lite     | https://github.com/immortalwrt/luci              | eafcf1c        |
