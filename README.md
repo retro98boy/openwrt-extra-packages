@@ -1,9 +1,9 @@
 | 包名                  | 来源                                             | 版本           |
 | --------------------- | ------------------------------------------------ | -------------- |
-| ddns-go               | https://github.com/sirpdboy/luci-app-ddns-go     | 5e8671f        |
-| luci-app-ddns-go      | https://github.com/sirpdboy/luci-app-ddns-go     | 5e8671f        |
-| easytier              | https://github.com/EasyTier/luci-app-easytier    | ca9e2d6        |
-| luci-app-easytier     | https://github.com/EasyTier/luci-app-easytier    | ca9e2d6        |
-| luci-app-socat        | https://github.com/sbwml/openwrt_pkgs            | 0bfbd44        |
-| msd_lite              | https://github.com/immortalwrt/packages          | 86af762        |
-| luci-app-msd_lite     | https://github.com/immortalwrt/luci              | eafcf1c        |
+| ddns-go               | https://github.com/sirpdboy/luci-app-ddns-go     | 5e8671f6ab95ddb0895b1f669365908967f043ca        |
+| luci-app-ddns-go      | https://github.com/sirpdboy/luci-app-ddns-go     | 5e8671f6ab95ddb0895b1f669365908967f043ca        |
+| easytier              | https://github.com/EasyTier/luci-app-easytier    | 89b3c275353e5789133c17f1da3c2227fa600a26        |
+| luci-app-easytier     | https://github.com/EasyTier/luci-app-easytier    | 89b3c275353e5789133c17f1da3c2227fa600a26        |
+| luci-app-socat        | https://github.com/sbwml/openwrt_pkgs            | 597c2ca0219a4edd285368de6210aff96ac3623c        |
+| msd_lite              | https://github.com/immortalwrt/packages          | 9783d169bd183f047350bc29306ebc53800164d1        |
+| luci-app-msd_lite     | https://github.com/immortalwrt/luci              | 147f021149a76949cd782608caf968fbbb511fa5        |
